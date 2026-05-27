@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Muscu Directory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { display: ['"Bebas Neue"', 'cursive'], body: ['"DM Sans"', 'sans-serif'] } } }
+    };
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #f0f4f8; color: #0f172a; min-height: 100vh; }
+
+    .header-bg {
+      background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #0c4a6e 100%);
+      position: relative; overflow: hidden;
+    }
+    .header-bg::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(6,182,212,.12) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 60% at 10% 80%, rgba(8,145,178,.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .header-grid {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(6,182,212,.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(6,182,212,.04) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+    .filter-bar { background: rgba(255,255,255,.95); backdrop-filter: blur(12px); }
+
+    /* Pills */
+    .m-pill { border: 1.5px solid #e2e8f0; color: #475569; background: #fff; transition: all .15s ease; cursor: pointer; }
+    .m-pill:hover { border-color: #06b6d4; color: #0891b2; }
+    .m-pill.active { background: #06b6d4; border-color: #06b6d4; color: #fff; box-shadow: 0 0 0 3px rgba(6,182,212,.2); }
+
+    .eq-pill { border: 1.5px solid #e2e8f0; color: #475569; background: #fff; transition: all .15s ease; cursor: pointer; }
+    .eq-pill:hover { border-color: #334155; color: #0f172a; }
+    .eq-pill.active.salle  { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+    .eq-pill.active.maison { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .eq-pill.active.street { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+
+    .sub-pill { border: 1px dashed #cbd5e1; color: #94a3b8; background: transparent; font-size:.7rem; transition: all .15s ease; cursor: pointer; }
+    .sub-pill:hover { border-color: #94a3b8; color: #475569; }
+    .sub-pill.active { border-style: solid; border-color: #06b6d4; color: #0891b2; background: #ecfeff; }
+
+    /* Cards */
+    .ex-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .ex-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(6,182,212,.12); border-color: #a5f3fc; }
+
+    /* GIF zone */
+    .gif-zone { height: 140px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .gif-zone img { width: 100%; height: 100%; object-fit: cover; }
+    .gif-zone .svg-fallback { width: 72px; height: 72px; }
+    .gif-zone .loader {
+      width: 28px; height: 28px; border: 3px solid #e2e8f0;
+      border-top-color: #06b6d4; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp .3s ease both; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .count-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+      font-size: .65rem; font-weight: 600;
+      background: rgba(6,182,212,.15); color: #0891b2; margin-left: 6px;
+    }
+    .scroll-x { overflow-x: auto; scrollbar-width: none; }
+    .scroll-x::-webkit-scrollbar { display: none; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header-bg text-white px-6 py-10 md:py-16">
+  <div class="header-grid"></div>
+  <div class="relative max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end gap-6">
+      <div class="flex-1">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="block w-2 h-2 rounded-full bg-cyan-400" style="animation:pulse-dot 2s infinite"></span>
+          <p class="text-cyan-400 text-xs font-semibold tracking-[.3em] uppercase">Catalogue interactif</p>
+        </div>
+        <h1 class="font-display leading-none tracking-wide" style="font-size:clamp(3rem,8vw,6rem)">
+          MUSCU<span class="text-cyan-400">DIRECTORY</span>
+        </h1>
+        <p class="mt-3 text-slate-400 text-sm md:text-base max-w-lg leading-relaxed">
+          Filtrez par groupe musculaire et par matériel pour trouver l'exercice idéal, que vous soyez à la salle, à la maison ou en street workout.
+        </p>
+      </div>
+      <div class="flex gap-3 shrink-0">
+        <div class="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-center backdrop-blur">
+          <p id="total-count" class="font-display text-4xl text-white">0</p>
+          <p class="text-xs text-slate-400 mt-0.5 tracking-wide">exercices</p>
+        </div>
+        <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-2xl px-5 py-3 text-center backdrop-blur">
+          <p id="filtered-count" class="font-display text-4xl text-cyan-400">0</p>
+          <p class="text-xs text-slate-400 mt-0.5 tracking-wide">affichés</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="sticky top-0 z-40 filter-bar border-b border-slate-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-6 py-4 space-y-3">
+    <div>
+      <p class="text-[10px] font-semibold text-slate-400 tracking-[.2em] uppercase mb-2">Groupe musculaire</p>
+      <div id="muscle-filters" class="scroll-x flex gap-2 pb-1"></div>
+    </div>
+    <div>
+      <p class="text-[10px] font-semibold text-slate-400 tracking-[.2em] uppercase mb-2">Matériel</p>
+      <div id="equip-filters" class="scroll-x flex gap-2 pb-1"></div>
+    </div>
+    <div id="subtype-zone" class="hidden">
+      <p class="text-[10px] font-semibold text-slate-400 tracking-[.2em] uppercase mb-2">Type de matériel</p>
+      <div id="subtype-filters" class="scroll-x flex gap-2 pb-1"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="max-w-6xl mx-auto px-6 py-8">
+  <div id="no-result" class="hidden text-center py-24">
+    <div class="text-6xl mb-4">🔍</div>
+    <p class="font-display text-4xl text-slate-300 tracking-wide">AUCUN EXERCICE</p>
+    <p class="text-slate-400 mt-2">Aucun exercice ne correspond à ces critères. Essayez une autre combinaison.</p>
+  </div>
+  <div id="exercise-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+</main>
+
+<footer class="text-center py-8 text-slate-400 text-xs border-t border-slate-200 mt-4">
+  <span class="font-display tracking-widest text-base text-slate-300">MUSCU<span class="text-cyan-400">DIRECTORY</span></span>
+  <span class="mx-2 text-slate-300">·</span>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   BASE DE DONNÉES
+   Champ "apiName" : terme de recherche envoyé à ExerciseDB
+══════════════════════════════════════════════════════ */
+const EXERCISES = [
+  /* ── PECTORAUX — SALLE ── */
+  {id:1,  name:"Développé couché barre",       muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell bench press",
+   desc:"Descendez la barre jusqu'au contact de la poitrine puis repoussez puissamment. L'exercice de référence pour la force et la masse globale."},
+  {id:2,  name:"Développé couché haltères",    muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell bench press",
+   desc:"Trajectoire convergente naturelle et plus grande amplitude d'étirement. Sollicite fortement les muscles stabilisateurs de l'épaule."},
+  {id:3,  name:"Développé incliné barre",      muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell incline bench press",
+   desc:"Banc incliné entre 30 et 45°. Cible prioritairement le faisceau claviculaire (haut des pectoraux) ainsi que l'avant de l'épaule."},
+  {id:4,  name:"Développé incliné haltères",   muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell incline bench press",
+   desc:"Combine l'inclinaison du banc pour le haut des pecs et la liberté articulaire des haltères pour maximiser la contraction en fin de mouvement."},
+  {id:5,  name:"Développé décliné barre",      muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell decline bench press",
+   desc:"Sur banc décliné, isole fortement la portion basse des pectoraux tout en réduisant le stress sur les articulations de l'épaule."},
+  {id:6,  name:"Développé décliné haltères",   muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell decline bench press",
+   desc:"Alternative pour les pectoraux inférieurs, avec un étirement prononcé et un meilleur ajustement de trajectoire pour les poignets."},
+  {id:7,  name:"Écarté couché haltères",       muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell fly",
+   desc:"Ouvrez les bras en arc de cercle avec coudes légèrement fléchis. Isolation pure qui étire intensément le grand pectoral sans engager les triceps."},
+  {id:8,  name:"Pull-over haltère",            muscle:"Pectoraux", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell pullover",
+   desc:"Allongé transversalement sur un banc, descendez l'haltère bras tendus derrière la tête. Travaille les pectoraux en étirement extrême et le grand dentelé."},
+  {id:9,  name:"Développé assis à la machine", muscle:"Pectoraux", equipment:"Salle", subtype:"Machine / Poulie", apiName:"chest press machine",
+   desc:"Trajectoire guidée qui sécurise le mouvement et permet d'appliquer une intensité maximale sans contrainte d'équilibre."},
+  {id:10, name:"Écarté à la poulie haute",     muscle:"Pectoraux", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable crossover",
+   desc:"Ramenez les poulies hautes vers le bas et le centre. Tension continue idéale sur la portion inférieure et médiane des pectoraux."},
+  {id:11, name:"Écarté à la poulie basse",     muscle:"Pectoraux", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable fly",
+   desc:"Ramenez les poulies basses vers le haut et le centre pour recruter activement la portion haute des pectoraux sous tension constante."},
+  {id:12, name:"Pec Deck / Butterfly",         muscle:"Pectoraux", equipment:"Salle", subtype:"Machine / Poulie", apiName:"pec deck fly",
+   desc:"Resserrez les supports devant vous. Parfait pour obtenir une forte contraction volontaire et une brûlure intense en fin de séance."},
+
+  /* ── PECTORAUX — MAISON ── */
+  {id:13, name:"Pompes classiques",            muscle:"Pectoraux", equipment:"Maison", subtype:"Poids du corps", apiName:"push-up",
+   desc:"Mains à largeur d'épaules, corps gainé, descendez la poitrine au sol puis repoussez. Exercice de base pour pectoraux, triceps et épaules."},
+  {id:14, name:"Pompes larges",                muscle:"Pectoraux", equipment:"Maison", subtype:"Poids du corps", apiName:"wide push-up",
+   desc:"Mains bien au-delà de la largeur des épaules. Diminue le travail des triceps pour accentuer l'étirement des faisceaux externes."},
+  {id:15, name:"Pompes déclinées",             muscle:"Pectoraux", equipment:"Maison", subtype:"Mobilier",       apiName:"decline push-up",
+   desc:"Pieds surélevés sur un support stable. L'inclinaison augmente la charge ressentie et cible le haut des pectoraux."},
+  {id:16, name:"Pompes inclinées",             muscle:"Pectoraux", equipment:"Maison", subtype:"Mobilier",       apiName:"incline push-up",
+   desc:"Mains surélevées sur un meuble stable, pieds au sol. Allège le poids du corps (idéal pour débuter) et cible le bas des pectoraux."},
+  {id:17, name:"Press-up isométrique",         muscle:"Pectoraux", equipment:"Maison", subtype:"Poids du corps", apiName:"chest squeeze",
+   desc:"Joignez les deux paumes devant la poitrine et pressez-les l'une contre l'autre 20-30 secondes. Contraction volontaire extrêmement intense."},
+
+  /* ── PECTORAUX — STREET WORKOUT ── */
+  {id:18, name:"Dips pectoraux (barres)",      muscle:"Pectoraux", equipment:"Street Workout", subtype:"Barres de dips",    apiName:"dips",
+   desc:"Penchez le buste en avant lors de la descente pour maximiser le recrutement des pectoraux. Descendez jusqu'à 90° avant de repousser."},
+  {id:19, name:"Pompes pieds surélevés barre", muscle:"Pectoraux", equipment:"Street Workout", subtype:"Barre de traction", apiName:"feet elevated push-up",
+   desc:"Pieds posés sur la barre basse, mains au sol. Réplique un développé incliné inversé avec le poids du corps pour cibler les pectoraux hauts."},
+
+  /* ── DOS — SALLE ── */
+  {id:20, name:"Soulevé de terre",             muscle:"Dos", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell deadlift",
+   desc:"Soulevez la barre du sol jusqu'à extension complète en gardant le dos parfaitement droit. Exercice roi pour la puissance globale et les lombaires."},
+  {id:21, name:"Rowing barre",                 muscle:"Dos", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell bent over row",
+   desc:"Buste à 45°, tirez la barre vers le nombril en gardant les coudes proches du corps. Idéal pour bâtir l'épaisseur du milieu du dos."},
+  {id:22, name:"Rowing haltères",              muscle:"Dos", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell bent over row",
+   desc:"Plus grande amplitude et liberté de rotation qu'à la barre. Excellent pour corriger les asymétries et maximiser l'étirement du grand dorsal."},
+  {id:23, name:"Rowing T-Bar",                 muscle:"Dos", equipment:"Salle", subtype:"Poids libre",      apiName:"t bar row",
+   desc:"Barre fixée à une extrémité, tirez la charge avec une poignée serrée. Excellent ciblage de la zone centrale du dos."},
+  {id:24, name:"Rowing bûcheron (unilatéral)", muscle:"Dos", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell one arm row",
+   desc:"Genou et main sur un banc, tirez l'haltère vers la hanche. Corrige les asymétries de force et permet de se concentrer sur l'étirement du grand dorsal."},
+  {id:25, name:"Tirage vertical (Lat Pulldown)",muscle:"Dos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable lat pulldown",
+   desc:"Tirez la barre jusqu'aux clavicules en resserrant les omoplates. L'exercice de base pour élargir le dos et développer la forme en V."},
+  {id:26, name:"Tirage horizontal poulie basse",muscle:"Dos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable seated row",
+   desc:"Tirez le triangle vers l'abdomen en ouvrant la poitrine. Cible l'épaisseur du grand dorsal et des trapèzes sur toute la trajectoire."},
+  {id:27, name:"Rowing machine guidée",        muscle:"Dos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"seated row machine",
+   desc:"Poitrine calée contre le support. L'appui thoracique élimine tout risque de triche et permet de travailler à intensité maximale."},
+  {id:28, name:"Pull-over poulie haute",       muscle:"Dos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable pullover",
+   desc:"Debout, bras tendus, amenez la barre jusqu'aux cuisses en contractant les grands dorsaux. Isolation pure sans intervention des biceps."},
+
+  /* ── DOS — MAISON ── */
+  {id:29, name:"Rowing inversé (sous table)",  muscle:"Dos", equipment:"Maison", subtype:"Mobilier",       apiName:"inverted row",
+   desc:"Allongé sous une table solide, saisissez le rebord et tirez la poitrine vers le haut. Meilleur substitut maison au rowing pour l'épaisseur du dos."},
+  {id:30, name:"Superman W allongé",           muscle:"Dos", equipment:"Maison", subtype:"Poids du corps", apiName:"superman",
+   desc:"Sur le ventre, formez un W avec les bras en serrant les omoplates en position haute. Excellent pour la posture et le haut du dos."},
+  {id:31, name:"Superman classique",           muscle:"Dos", equipment:"Maison", subtype:"Poids du corps", apiName:"superman",
+   desc:"Allongé sur le ventre, décollez simultanément bras et jambes en contractant les fessiers. Isolation efficace pour les érecteurs et les lombaires."},
+
+  /* ── DOS — STREET WORKOUT ── */
+  {id:32, name:"Tractions pronation (large)",  muscle:"Dos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"pull-up",
+   desc:"Prise large au-delà des épaules, tirez jusqu'à ce que le menton dépasse la barre en resserrant les omoplates. L'exercice roi pour élargir le dos."},
+  {id:33, name:"Tractions supination",         muscle:"Dos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"chin-up",
+   desc:"Prise paumes vers soi, écartement épaules. Recrute davantage les biceps et permet une contraction plus complète du grand dorsal en haut du mouvement."},
+  {id:34, name:"Muscle-up",                    muscle:"Dos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"muscle up",
+   desc:"Enchaînez une traction explosive et une transition au-dessus de la barre. Exige une grande puissance du dos, des épaules et des triceps simultanément."},
+
+  /* ── ÉPAULES — SALLE ── */
+  {id:35, name:"Développé militaire barre",    muscle:"Épaules", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell overhead press",
+   desc:"Debout, développez la barre des clavicules jusqu'au-dessus de la tête. Exercice fondamental pour la masse globale des deltoïdes."},
+  {id:36, name:"Développé assis haltères",     muscle:"Épaules", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell shoulder press",
+   desc:"Assis sur banc à 85°, poussez les haltères verticalement. Moins contraignant pour le bas du dos, développe l'épaisseur des deltoïdes."},
+  {id:37, name:"Élévations latérales haltères",muscle:"Épaules", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell lateral raise",
+   desc:"Élevez les haltères de chaque côté jusqu'à l'horizontale. Le mouvement incontournable pour élargir la carrure (faisceau latéral)."},
+  {id:38, name:"Élévations frontales haltères",muscle:"Épaules", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell front raise",
+   desc:"Levez les haltères devant vous jusqu'au niveau des yeux. Isole strictement le faisceau antérieur de l'épaule."},
+  {id:39, name:"Oiseau / Reverse Fly",         muscle:"Épaules", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell reverse fly",
+   desc:"Buste parallèle au sol, ouvrez les bras sur les côtés. Crucial pour le faisceau postérieur de l'épaule et l'équilibre postural."},
+  {id:40, name:"Développé épaules machine",    muscle:"Épaules", equipment:"Salle", subtype:"Machine / Poulie", apiName:"shoulder press machine",
+   desc:"Poignées poussées vers le haut sur machine guidée. Excellent contrôle pour surcharger l'avant et le côté des épaules en sécurité."},
+  {id:41, name:"Élévations latérales poulie",  muscle:"Épaules", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable lateral raise",
+   desc:"Câble de poulie basse, levez le bras sur le côté. Tension continue exceptionnelle, notamment au début de la phase d'élévation."},
+  {id:42, name:"Face Pull (poulie haute)",     muscle:"Épaules", equipment:"Salle", subtype:"Machine / Poulie", apiName:"face pull",
+   desc:"Tirez une corde vers votre visage en écartant les coudes. Renforce l'arrière de l'épaule, les trapèzes et améliore la santé articulaire."},
+  {id:43, name:"Reverse Pec Deck",             muscle:"Épaules", equipment:"Salle", subtype:"Machine / Poulie", apiName:"reverse pec deck",
+   desc:"Assis face à la machine à écartés, repoussez les poignées vers l'arrière. Isolation guidée très précise de l'arrière des épaules."},
+
+  /* ── ÉPAULES — MAISON ── */
+  {id:44, name:"Pike Push-up",                 muscle:"Épaules", equipment:"Maison", subtype:"Poids du corps", apiName:"pike push up",
+   desc:"En V inversé, pieds proches des mains, fesses hautes. Descendez le sommet de la tête vers le sol — substitut parfait au développé militaire."},
+  {id:45, name:"Handstand Push-up (mur)",      muscle:"Épaules", equipment:"Maison", subtype:"Poids du corps", apiName:"handstand push up",
+   desc:"En poirier contre un mur, effectuez des flexions de bras complètes. Développe une force extrême des épaules. Réservé aux pratiquants avancés."},
+  {id:46, name:"Oiseau au sol (postérieur)",   muscle:"Épaules", equipment:"Maison", subtype:"Poids du corps", apiName:"prone y raise",
+   desc:"Allongé sur le ventre, bras à 90°, décollez les bras du sol à la force de l'arrière de l'épaule et des rhomboïdes. Maintenez en haut."},
+
+  /* ── ÉPAULES — STREET WORKOUT ── */
+  {id:47, name:"Handstand Push-up libre",      muscle:"Épaules", equipment:"Street Workout", subtype:"Barre de traction", apiName:"handstand push up",
+   desc:"Poirier en équilibre libre ou contre un mur de playground. Contrôle total du corps et force herculéenne pour les épaules et triceps."},
+  {id:48, name:"Dips (accent épaules)",        muscle:"Épaules", equipment:"Street Workout", subtype:"Barres de dips",    apiName:"dips",
+   desc:"Dips avec buste vertical et isolation sur l'avant des épaules (deltoïde antérieur). Idéal pour la transition vers le muscle-up."},
+
+  /* ── BICEPS — SALLE ── */
+  {id:49, name:"Curl barre EZ",                muscle:"Biceps", equipment:"Salle", subtype:"Poids libre",      apiName:"ez bar curl",
+   desc:"Fléchissez les coudes pour monter la barre EZ sans balancer le buste. La barre EZ limite le stress sur les poignets. Exercice de base pour la masse."},
+  {id:50, name:"Curl haltères supination",     muscle:"Biceps", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell bicep curl",
+   desc:"Flexion des bras avec rotation du poignet (supination) au cours de la montée. Travail unilatéral précis qui recrute au maximum les fonctions du biceps."},
+  {id:51, name:"Curl marteau",                 muscle:"Biceps", equipment:"Salle", subtype:"Poids libre",      apiName:"hammer curl",
+   desc:"Prise neutre (paumes face à face). Cible le brachial antérieur et le long supinateur, apportant de l'épaisseur à l'avant-bras et au profil du bras."},
+  {id:52, name:"Curl incliné haltères",        muscle:"Biceps", equipment:"Salle", subtype:"Poids libre",      apiName:"incline dumbbell curl",
+   desc:"Banc incliné à 45°, bras pendants vers l'arrière. Place la longue portion dans un étirement maximal — idéal pour développer le pic du biceps."},
+  {id:53, name:"Curl Larry Scott (pupitre)",   muscle:"Biceps", equipment:"Salle", subtype:"Poids libre",      apiName:"preacher curl",
+   desc:"Bras calés sur le pupitre incliné. Supprime totalement l'élan du corps pour une isolation extrême de la portion courte du biceps."},
+  {id:54, name:"Curl poulie basse (barre)",    muscle:"Biceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable curl",
+   desc:"Tension mécanique identique du début à la fin de la trajectoire, contrairement aux poids libres qui la perdent en haut du mouvement."},
+  {id:55, name:"Curl poulie basse (corde)",    muscle:"Biceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable rope curl",
+   desc:"Écartez légèrement les poignets en haut pour accentuer la contraction finale. Sensation de brûlure maximale en fin de course."},
+  {id:56, name:"Machine biceps guidée",        muscle:"Biceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"machine bicep curl",
+   desc:"Coudes calés sur les coussinets. Parfait en fin de séance pour séries dégressives à haute intensité de façon très sécurisée."},
+
+  /* ── BICEPS — MAISON ── */
+  {id:57, name:"Curl sous la table",           muscle:"Biceps", equipment:"Maison", subtype:"Mobilier",       apiName:"inverted row",
+   desc:"En rowing inversé sous la table, prise paumes vers le visage. Concentrez-vous uniquement sur la flexion des coudes pour isoler les biceps."},
+  {id:58, name:"Curl avec la jambe",           muscle:"Biceps", equipment:"Maison", subtype:"Poids du corps", apiName:"bodyweight bicep curl",
+   desc:"Assis, main passée sous la cuisse opposée. Soulevez la jambe en résistant avec le biceps pendant que la jambe pousse contre."},
+
+  /* ── BICEPS — STREET WORKOUT ── */
+  {id:59, name:"Tractions prise supination",   muscle:"Biceps", equipment:"Street Workout", subtype:"Barre de traction", apiName:"chin-up",
+   desc:"Prise paume vers soi écartement serré. Maximise le recrutement des biceps sur toute la phase de traction jusqu'à la contraction complète en haut."},
+
+  /* ── TRICEPS — SALLE ── */
+  {id:60, name:"Développé prise serrée",       muscle:"Triceps", equipment:"Salle", subtype:"Poids libre",      apiName:"close grip bench press",
+   desc:"Sur le banc, mains à largeur d'épaules, coudes collés au corps lors de la descente. Transfère l'effort de poussée sur les triceps."},
+  {id:61, name:"Skullcrusher (barre au front)",muscle:"Triceps", equipment:"Salle", subtype:"Poids libre",      apiName:"skull crusher",
+   desc:"Allongé, descendez la barre EZ vers le front en pliant uniquement les coudes. Repoussez sans écarter les coudes. Très efficace pour la longue portion."},
+  {id:62, name:"Extension haltère au-dessus",  muscle:"Triceps", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell tricep overhead extension",
+   desc:"Haltère à deux mains au-dessus de la tête, descendez-le derrière la nuque. Place le muscle en étirement intense favorable à l'hypertrophie."},
+  {id:63, name:"Extension poulie (barre)",     muscle:"Triceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable tricep pushdown",
+   desc:"Poussez la barre vers le bas jusqu'à extension complète, coudes immobiles le long du flanc. Cible le vaste latéral (relief externe du bras)."},
+  {id:64, name:"Extension poulie (corde)",     muscle:"Triceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable rope tricep pushdown",
+   desc:"Écartez les mains vers l'extérieur en fin de course avec la corde pour une contraction musculaire maximale et profonde."},
+  {id:65, name:"Kickback poulie / haltère",    muscle:"Triceps", equipment:"Salle", subtype:"Machine / Poulie", apiName:"tricep kickback",
+   desc:"Buste penché, bras parallèle au sol, extension vers l'arrière. La version poulie offre une tension homogène en début de mouvement."},
+
+  /* ── TRICEPS — MAISON ── */
+  {id:66, name:"Dips sur chaise",              muscle:"Triceps", equipment:"Maison", subtype:"Mobilier",       apiName:"bench dip",
+   desc:"Mains sur le bord d'une chaise ferme, fesses dans le vide. Descendez le bassin en pliant les coudes puis remontez à la force des triceps."},
+  {id:67, name:"Pompes diamant",               muscle:"Triceps", equipment:"Maison", subtype:"Poids du corps", apiName:"diamond push up",
+   desc:"Index et pouces formant un losange sous la poitrine. Cette prise bascule l'essentiel de la charge sur les triceps."},
+  {id:68, name:"Extensions triceps au mur",    muscle:"Triceps", equipment:"Maison", subtype:"Poids du corps", apiName:"wall push up",
+   desc:"Avant-bras à plat sur le mur, poussez sur les paumes pour tendre les bras et décoller les coudes. Isole fortement les triceps."},
+
+  /* ── TRICEPS — STREET WORKOUT ── */
+  {id:69, name:"Dips triceps (barres parallèles)",muscle:"Triceps", equipment:"Street Workout", subtype:"Barres de dips",    apiName:"parallel bar dip",
+   desc:"Buste vertical, descendez à 90° puis poussez jusqu'à extension complète. Buste droit = accent triceps. Exercice de masse pour les bras."},
+  {id:70, name:"Ring dips (anneaux)",          muscle:"Triceps", equipment:"Street Workout", subtype:"Barre de traction", apiName:"ring dip",
+   desc:"Dips sur anneaux instables. Engage intensément les triceps et les stabilisateurs de l'épaule pour un développement fonctionnel complet."},
+
+  /* ── JAMBES — SALLE ── */
+  {id:71, name:"Back Squat (barre)",           muscle:"Jambes", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell squat",
+   desc:"Barre sur les trapèzes, descendez sous la ligne des genoux, dos droit, genoux dans l'axe. Développe l'ensemble des cuisses et des fessiers."},
+  {id:72, name:"Front Squat (barre)",          muscle:"Jambes", equipment:"Salle", subtype:"Poids libre",      apiName:"barbell front squat",
+   desc:"Barre sur l'avant des épaules. Accentue le travail des quadriceps — idéal pour le développement de l'avant de la cuisse."},
+  {id:73, name:"Fentes (marchées / statiques)",muscle:"Jambes", equipment:"Salle", subtype:"Poids libre",      apiName:"dumbbell lunge",
+   desc:"Grand pas en avant, genou arrière vers le sol. Développe la puissance unilatérale et corrige les déséquilibres musculaires."},
+  {id:74, name:"Gobelet Squat",                muscle:"Jambes", equipment:"Salle", subtype:"Poids libre",      apiName:"goblet squat",
+   desc:"Haltère lourd contre la poitrine, squat complet. Garde le buste parfaitement vertical et soulage le bas du dos."},
+  {id:75, name:"Presse à cuisses (Leg Press)", muscle:"Jambes", equipment:"Salle", subtype:"Machine / Poulie", apiName:"leg press",
+   desc:"Repoussez le plateau avec les jambes. Permet de travailler très lourd et en sécurité sur les quadriceps et fessiers sans charger la colonne."},
+  {id:76, name:"Hack Squat machine",           muscle:"Jambes", equipment:"Salle", subtype:"Machine / Poulie", apiName:"hack squat",
+   desc:"Dos calé contre la machine coulissante, flexions de jambes. Focus dévastateur sur l'avant des cuisses (quadriceps)."},
+  {id:77, name:"Leg Extension",                muscle:"Jambes", equipment:"Salle", subtype:"Machine / Poulie", apiName:"leg extension",
+   desc:"Extension des jambes vers le haut sur la machine. Isolation pure pour l'échauffement ou la finition et la définition des quadriceps."},
+  {id:78, name:"Hip Thrust machine",           muscle:"Jambes", equipment:"Salle", subtype:"Machine / Poulie", apiName:"hip thrust",
+   desc:"Haut du dos sur le banc, poussez la charge par extension complète des hanches. La référence scientifique pour isoler les grands fessiers."},
+
+  /* ── JAMBES — MAISON ── */
+  {id:79, name:"Squat au poids du corps",      muscle:"Jambes", equipment:"Maison", subtype:"Poids du corps", apiName:"bodyweight squat",
+   desc:"Flexion complète à tempo lent (4 secondes à la descente). Sans charge, la qualité d'exécution et l'amplitude compensent l'absence de résistance."},
+  {id:80, name:"Fentes sautées (pliométriques)",muscle:"Jambes", equipment:"Maison", subtype:"Poids du corps", apiName:"jump lunge",
+   desc:"Alternez les jambes en sautant entre chaque répétition. Composante explosive redoutable pour la puissance et la dépense calorique."},
+  {id:81, name:"Squat bulgare sur chaise",     muscle:"Jambes", equipment:"Maison", subtype:"Mobilier",       apiName:"bulgarian split squat",
+   desc:"Pied arrière sur l'assise d'une chaise, flexion sur la jambe avant. Exercice intense pour l'arrière des cuisses et les fessiers."},
+  {id:82, name:"Pistol Squat",                 muscle:"Jambes", equipment:"Maison", subtype:"Poids du corps", apiName:"pistol squat",
+   desc:"Descendez sur une seule jambe, l'autre tendue devant vous, puis remontez. L'exercice ultime de force, souplesse et équilibre."},
+  {id:83, name:"Pont fessier (Glute Bridge)",  muscle:"Jambes", equipment:"Maison", subtype:"Poids du corps", apiName:"glute bridge",
+   desc:"Allongé sur le dos, décollez les fesses en poussant sur les talons. Augmentez la difficulté en exécutant sur une seule jambe."},
+  {id:84, name:"Glissades ischio-jambiers",    muscle:"Jambes", equipment:"Maison", subtype:"Poids du corps", apiName:"nordic hamstring curl",
+   desc:"En pont fessier, talons sur serviettes (sol glissant). Tendez puis ramenez les jambes en contractant intensément l'arrière des cuisses."},
+
+  /* ── JAMBES — STREET WORKOUT ── */
+  {id:85, name:"Pistol Squat à la barre",      muscle:"Jambes", equipment:"Street Workout", subtype:"Barre de traction", apiName:"pistol squat",
+   desc:"Squat sur une jambe avec légère aide de la barre pour l'équilibre. Progression idéale avant le pistol squat libre."},
+  {id:86, name:"Box Jump (plyo)",              muscle:"Jambes", equipment:"Street Workout", subtype:"Barres de dips",    apiName:"box jump",
+   desc:"Sautez et atterrissez sur une surface surélevée en absorbant le choc avec les jambes fléchies. Développe la puissance explosive."},
+
+  /* ── ABDOS — SALLE ── */
+  {id:87, name:"Crunch à la poulie haute",     muscle:"Abdos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable crunch",
+   desc:"Agenouillé, contractez les abdominaux en fléchissant le buste vers l'avant contre la résistance. Ajoute une charge progressive pour développer l'épaisseur."},
+  {id:88, name:"Relevé de jambes suspendu",    muscle:"Abdos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"hanging leg raise",
+   desc:"Suspendu ou en appui sur un banc décliné, levez les jambes ou enroulez le bassin. Cible prioritairement la portion inférieure des abdominaux."},
+  {id:89, name:"Planche (gainage)",            muscle:"Abdos", equipment:"Salle", subtype:"Poids du corps",   apiName:"plank",
+   desc:"Avant-bras et pointes de pieds, corps aligné. Renforce le transverse en profondeur, indispensable pour un ventre plat et un dos solide."},
+  {id:90, name:"Rotations de buste (poulie)",  muscle:"Abdos", equipment:"Salle", subtype:"Machine / Poulie", apiName:"cable wood chop",
+   desc:"Rotation latérale contre la résistance d'une poulie. Cible les obliques pour sculpter et dessiner les flancs de la taille."},
+
+  /* ── ABDOS — MAISON ── */
+  {id:91, name:"Crunchs / Crunchs bicyclette", muscle:"Abdos", equipment:"Maison", subtype:"Poids du corps", apiName:"crunch",
+   desc:"Enroulez le buste vers les genoux. Version bicyclette : coude opposé vers le genou inverse pour coupler grand droit et obliques."},
+  {id:92, name:"Relevés de jambes allongé",    muscle:"Abdos", equipment:"Maison", subtype:"Poids du corps", apiName:"leg raise",
+   desc:"Mains sous les fesses, jambes tendues montées à la verticale puis redescendues lentement sans cambrer. Cible l'abdomen inférieur."},
+  {id:93, name:"Gainage latéral (planche)",    muscle:"Abdos", equipment:"Maison", subtype:"Poids du corps", apiName:"side plank",
+   desc:"Appui sur un avant-bras et la tranche du pied, bassin aligné. Statique ou dynamique pour cibler les obliques."},
+  {id:94, name:"Russian Twists",               muscle:"Abdos", equipment:"Maison", subtype:"Poids du corps", apiName:"russian twist",
+   desc:"Assis à 45°, jambes légèrement décollées, pivotez les épaules alternativement de chaque côté pour recruter la sangle rotative."},
+  {id:95, name:"Stomach Vacuum",               muscle:"Abdos", equipment:"Maison", subtype:"Poids du corps", apiName:"stomach vacuum",
+   desc:"Expirez totalement puis aspirez le nombril sous les côtes sans reprendre d'air, 10-15s. Idéal à jeun pour affiner la taille profondément."},
+
+  /* ── ABDOS — STREET WORKOUT ── */
+  {id:96,  name:"L-Sit (barre / parallèles)",  muscle:"Abdos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"l-sit",
+   desc:"Suspendu à la barre, levez les jambes tendues à l'horizontale et maintenez la position. Force abdominale et de compression exceptionnelle."},
+  {id:97,  name:"Dragon Flag",                 muscle:"Abdos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"dragon flag",
+   desc:"Allongé, agrippez la barre derrière la tête et montez le corps aligné à la verticale en ne touchant que les épaules. Exercice légendaire de gainage."},
+  {id:98,  name:"Knee Raises barre",           muscle:"Abdos", equipment:"Street Workout", subtype:"Barre de traction", apiName:"hanging knee raise",
+   desc:"Suspendu, levez les genoux pliés (débutant) ou jambes tendues (avancé) vers la poitrine. Renforce l'ensemble de la ceinture abdominale."},
+];
+
+/* ══════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════ */
+const MUSCLES    = ["Tous","Pectoraux","Dos","Épaules","Biceps","Triceps","Jambes","Abdos"];
+const EQUIPMENTS = ["Salle","Maison","Street Workout"];
+const SUBTYPES   = {
+  "Salle":          ["Poids libre","Machine / Poulie"],
+  "Maison":         ["Poids du corps","Mobilier"],
+  "Street Workout": ["Barre de traction","Barres de dips"],
+};
+
+const MC = {
+  "Pectoraux": {bg:"bg-rose-50",   border:"border-rose-200",   text:"text-rose-700",   dot:"bg-rose-400",   accent:"#fb7185", illusBg:"#fff1f2"},
+  "Dos":       {bg:"bg-amber-50",  border:"border-amber-200",  text:"text-amber-700",  dot:"bg-amber-400",  accent:"#fbbf24", illusBg:"#fffbeb"},
+  "Épaules":   {bg:"bg-violet-50", border:"border-violet-200", text:"text-violet-700", dot:"bg-violet-400", accent:"#a78bfa", illusBg:"#f5f3ff"},
+  "Biceps":    {bg:"bg-blue-50",   border:"border-blue-200",   text:"text-blue-700",   dot:"bg-blue-400",   accent:"#60a5fa", illusBg:"#eff6ff"},
+  "Triceps":   {bg:"bg-orange-50", border:"border-orange-200", text:"text-orange-700", dot:"bg-orange-400", accent:"#fb923c", illusBg:"#fff7ed"},
+  "Jambes":    {bg:"bg-green-50",  border:"border-green-200",  text:"text-green-700",  dot:"bg-green-400",  accent:"#4ade80", illusBg:"#f0fdf4"},
+  "Abdos":     {bg:"bg-cyan-50",   border:"border-cyan-200",   text:"text-cyan-700",   dot:"bg-cyan-400",   accent:"#22d3ee", illusBg:"#ecfeff"},
+};
+const EC = {
+  "Salle":          {badge:"bg-blue-700 text-white",   icon:"🏋️"},
+  "Maison":         {badge:"bg-teal-600 text-white",   icon:"🏠"},
+  "Street Workout": {badge:"bg-violet-600 text-white", icon:"🌳"},
+};
+
+/* Cache GIF en mémoire pour ne pas rappeler l'API si le même exercice
+   est affiché plusieurs fois (changement de filtre, etc.) */
+const gifCache = {};
+
+/* ══════════════════════════════════════════════════════
+   ÉTAT
+══════════════════════════════════════════════════════ */
+const state = { muscle:"Tous", equipment: new Set(), subtypes: new Set() };
+
+/* ══════════════════════════════════════════════════════
+   FETCH GIF via notre backend proxy
+══════════════════════════════════════════════════════ */
+async function fetchGif(apiName) {
+  if (gifCache[apiName] !== undefined) return gifCache[apiName];
+  gifCache[apiName] = null; // marque "en cours"
+  try {
+    const res  = await fetch(`/api/exercises?name=${encodeURIComponent(apiName)}`);
+    const data = await res.json();
+    gifCache[apiName] = data.gifUrl || null;
+  } catch (e) {
+    gifCache[apiName] = null;
+  }
+  return gifCache[apiName];
+}
+
+/* ══════════════════════════════════════════════════════
+   SVG FALLBACK (si pas de GIF)
+══════════════════════════════════════════════════════ */
+function svgFallback(muscle, accent) {
+  const a = accent || "#06b6d4";
+  const shapes = {
+    "Pectoraux": `<path d="M24 38 Q36 28 50 32 Q42 50 26 52Z" fill="${a}" opacity=".7"/><path d="M76 38 Q64 28 50 32 Q58 50 74 52Z" fill="${a}" opacity=".7"/><ellipse cx="50" cy="28" rx="14" ry="10" fill="${a}" opacity=".25"/>`,
+    "Dos":       `<path d="M28 30 Q50 22 72 30 L72 44 Q50 48 28 44Z" fill="${a}" opacity=".6"/><line x1="50" y1="24" x2="50" y2="72" stroke="${a}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>`,
+    "Épaules":   `<ellipse cx="18" cy="42" rx="13" ry="13" fill="${a}" opacity=".7"/><ellipse cx="82" cy="42" rx="13" ry="13" fill="${a}" opacity=".7"/><ellipse cx="50" cy="36" rx="12" ry="11" fill="${a}" opacity=".5"/>`,
+    "Biceps":    `<ellipse cx="22" cy="44" rx="10" ry="22" fill="${a}" opacity=".7"/><ellipse cx="78" cy="44" rx="10" ry="22" fill="${a}" opacity=".7"/>`,
+    "Triceps":   `<ellipse cx="20" cy="50" rx="9" ry="20" fill="${a}" opacity=".65" transform="rotate(-8 20 50)"/><ellipse cx="80" cy="50" rx="9" ry="20" fill="${a}" opacity=".65" transform="rotate(8 80 50)"/>`,
+    "Jambes":    `<rect x="26" y="28" width="18" height="38" rx="9" fill="${a}" opacity=".65"/><rect x="56" y="28" width="18" height="38" rx="9" fill="${a}" opacity=".65"/>`,
+    "Abdos":     `<rect x="37" y="24" width="10" height="10" rx="4" fill="${a}" opacity=".8"/><rect x="53" y="24" width="10" height="10" rx="4" fill="${a}" opacity=".8"/><rect x="37" y="38" width="10" height="10" rx="4" fill="${a}" opacity=".75"/><rect x="53" y="38" width="10" height="10" rx="4" fill="${a}" opacity=".75"/><rect x="37" y="52" width="10" height="10" rx="4" fill="${a}" opacity=".6"/><rect x="53" y="52" width="10" height="10" rx="4" fill="${a}" opacity=".6"/>`,
+  };
+  return `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:72px;height:72px">
+    <ellipse cx="50" cy="52" rx="32" ry="36" fill="${a}" opacity=".08"/>
+    ${shapes[muscle] || shapes["Abdos"]}
+  </svg>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDU FILTRES
+══════════════════════════════════════════════════════ */
+function countFiltered(m, eq, st) {
+  return EXERCISES.filter(ex => {
+    const mOk = m === "Tous" || ex.muscle === m;
+    const eOk = eq.size === 0 || eq.has(ex.equipment);
+    const sOk = st.size === 0 || st.has(ex.subtype);
+    return mOk && eOk && sOk;
+  }).length;
+}
+
+function renderMuscleFilters() {
+  document.getElementById("muscle-filters").innerHTML = MUSCLES.map(m => {
+    const cnt = countFiltered(m, state.equipment, state.subtypes);
+    return `<button onclick="selectMuscle('${m}')"
+      class="m-pill whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium ${state.muscle===m?'active':''}">
+      ${m}<span class="count-badge">${cnt}</span></button>`;
+  }).join('');
+}
+
+function renderEquipFilters() {
+  document.getElementById("equip-filters").innerHTML = EQUIPMENTS.map(eq => {
+    const cls = eq==="Salle"?"salle":eq==="Maison"?"maison":"street";
+    const isA = state.equipment.has(eq);
+    const cnt = countFiltered(state.muscle, new Set([eq]), new Set());
+    return `<button onclick="toggleEquip('${eq}')"
+      class="eq-pill whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium ${isA?'active '+cls:''}">
+      ${EC[eq].icon} ${eq}<span class="count-badge" style="${isA?'background:rgba(255,255,255,.2);color:#fff':''}">${cnt}</span></button>`;
+  }).join('');
+}
+
+function renderSubtypeFilters() {
+  const zone = document.getElementById("subtype-zone");
+  if (state.equipment.size === 0) { zone.classList.add("hidden"); return; }
+  zone.classList.remove("hidden");
+  let subs = [];
+  state.equipment.forEach(eq => { subs = subs.concat(SUBTYPES[eq]||[]); });
+  subs = [...new Set(subs)];
+  document.getElementById("subtype-filters").innerHTML = subs.map(s => `
+    <button onclick="toggleSubtype('${s}')"
+      class="sub-pill whitespace-nowrap px-3 py-1 rounded-full font-medium ${state.subtypes.has(s)?'active':''}">
+      ${s}</button>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDU GRILLE
+══════════════════════════════════════════════════════ */
+function getFiltered() {
+  return EXERCISES.filter(ex => {
+    const mOk = state.muscle==="Tous" || ex.muscle===state.muscle;
+    const eOk = state.equipment.size===0 || state.equipment.has(ex.equipment);
+    const sOk = state.subtypes.size===0  || state.subtypes.has(ex.subtype);
+    return mOk && eOk && sOk;
+  });
+}
+
+function cardHTML(ex, i) {
+  const mc = MC[ex.muscle]||MC["Abdos"];
+  const ec = EC[ex.equipment];
+  const cachedGif = gifCache[ex.apiName];
+
+  // Zone illustration : GIF chargé / loader / SVG fallback
+  let illusHTML;
+  if (cachedGif) {
+    illusHTML = `<img src="${cachedGif}" alt="${ex.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover"/>`;
+  } else if (cachedGif === null && gifCache[ex.apiName] !== undefined) {
+    // null explicite = pas trouvé sur l'API
+    illusHTML = `<div class="flex items-center justify-center w-full h-full" style="background:${mc.illusBg}">${svgFallback(ex.muscle, mc.accent)}</div>`;
+  } else {
+    // undefined = pas encore tenté
+    illusHTML = `<div class="flex items-center justify-center w-full h-full" style="background:${mc.illusBg}"><div class="loader"></div></div>`;
+  }
+
+  return `
+    <article class="ex-card fade-up" style="animation-delay:${Math.min(i*35,400)}ms" data-id="${ex.id}">
+      <div class="gif-zone">${illusHTML}</div>
+      <div class="p-4 space-y-2.5">
+        <div class="flex flex-wrap gap-1.5">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${mc.bg} ${mc.border} ${mc.text}">
+            <span class="w-1.5 h-1.5 rounded-full ${mc.dot} shrink-0"></span>${ex.muscle}
+          </span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${ec.badge}">${ec.icon} ${ex.equipment}</span>
+        </div>
+        <p class="text-[11px] text-slate-400 font-medium tracking-wide uppercase">${ex.subtype}</p>
+        <h3 class="font-semibold text-slate-900 text-sm leading-snug">${ex.name}</h3>
+        <p class="text-slate-500 text-xs leading-relaxed">${ex.desc}</p>
+      </div>
+    </article>`;
+}
+
+function renderGrid() {
+  const filtered = getFiltered();
+  const grid = document.getElementById("exercise-grid");
+  const noRes = document.getElementById("no-result");
+  document.getElementById("filtered-count").textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    noRes.classList.remove("hidden");
+    return;
+  }
+  noRes.classList.add("hidden");
+  grid.innerHTML = filtered.map((ex,i) => cardHTML(ex,i)).join('');
+
+  // Lance le fetch GIF pour les cartes sans GIF en cache
+  filtered.forEach(ex => {
+    if (gifCache[ex.apiName] === undefined) {
+      fetchGif(ex.apiName).then(url => {
+        // Met à jour uniquement la zone illustration de la carte concernée
+        const card = document.querySelector(`[data-id="${ex.id}"] .gif-zone`);
+        if (!card) return;
+        const mc = MC[ex.muscle]||MC["Abdos"];
+        if (url) {
+          card.innerHTML = `<img src="${url}" alt="${ex.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover"/>`;
+        } else {
+          card.innerHTML = `<div class="flex items-center justify-center w-full h-full" style="background:${mc.illusBg}">${svgFallback(ex.muscle, mc.accent)}</div>`;
+        }
+      });
+    }
+  });
+}
+
+function renderAll() {
+  renderMuscleFilters();
+  renderEquipFilters();
+  renderSubtypeFilters();
+  renderGrid();
+}
+
+/* ══════════════════════════════════════════════════════
+   ÉVÉNEMENTS
+══════════════════════════════════════════════════════ */
+function selectMuscle(m)  { state.muscle = m; renderAll(); }
+function toggleEquip(eq)  {
+  if (state.equipment.has(eq)) {
+    state.equipment.delete(eq);
+    (SUBTYPES[eq]||[]).forEach(s => state.subtypes.delete(s));
+  } else { state.equipment.add(eq); }
+  renderAll();
+}
+function toggleSubtype(s) {
+  state.subtypes.has(s) ? state.subtypes.delete(s) : state.subtypes.add(s);
+  renderAll();
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+document.getElementById("total-count").textContent = EXERCISES.length;
+renderAll();
+</script>
+</body>
+</html>

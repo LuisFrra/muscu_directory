@@ -1,0 +1,16 @@
+{
+  "name": "muscu-directory",
+  "version": "1.0.0",
+  "description": "Catalogue interactif d'exercices de musculation",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
